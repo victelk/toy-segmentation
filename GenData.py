@@ -16,7 +16,7 @@ class GenData:
         self.width = width  # image width
 
     # Generate num images:
-    def generate(self, num):
+    def generate(self, file_prefix, num):
         width = self.width
         height = self.height
         for k in range(num):
@@ -24,12 +24,14 @@ class GenData:
             img_labels = np.zeros((width, height))
             img_labels[img > img.mean()] = 255
             dir_name = "data"
-            image_name = "image" + str(k) + ".jpg"
+            image_name = file_prefix + "_" + "image" + str(k) + ".jpg"
             cv2.imwrite(os.path.join(dir_name, image_name), img)
-            image_labels_name = "label_image" + str(k) + ".jpg"
+            image_labels_name = file_prefix + "_" + "label_image" + str(k) + ".jpg"
             cv2.imwrite(os.path.join(dir_name, image_labels_name), img_labels)
 
 
 if __name__ == "__main__":
-    g1 = GenData(6, 6)
-    g1.generate(5)
+    gd = GenData(6, 6)
+    gd.generate("train", 100)
+    gd.generate("test", 50)
+    gd.generate("predict", 2)
