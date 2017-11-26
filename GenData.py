@@ -24,9 +24,9 @@ class GenData:
             img_labels = np.zeros((width, height))
             img_labels[img > img.mean()] = 255
             dir_name = "data"
-            image_name = file_prefix + "_" + "image" + str(k) + ".jpg"
+            image_name = file_prefix + "_" + "image" + str(k) + ".png"
             cv2.imwrite(os.path.join(dir_name, image_name), img)
-            image_labels_name = file_prefix + "_" + "label_image" + str(k) + ".jpg"
+            image_labels_name = file_prefix + "_" + "label_image" + str(k) + ".png"
             cv2.imwrite(os.path.join(dir_name, image_labels_name), img_labels)
 
 

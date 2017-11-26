@@ -8,20 +8,20 @@ LEARNING_RATE = 0.00001
 tf.logging.set_verbosity(tf.logging.WARN)
 
 
-def my_input_fn(imagenames, repeat_count=1):
-    def input_parser(img_path):
+def my_input_fn(imagenames, label_imagenames, repeat_count=1):
+    def input_parser(img_path, label_img_path):
         # read the img from file
-        img_file = tf.read_file(img_path[0])
+        img_file = tf.read_file(img_path)
         img_decoded = tf.image.decode_image(img_file, channels=1)
         img_decoded.set_shape([6, 6, 1])
         img_flatten = tf.to_float(tf.reshape(img_decoded, [-1]))
-        label_img_file = tf.read_file(img_path[1])
+        label_img_file = tf.read_file(label_img_path)
         label_img_decoded = tf.image.decode_image(label_img_file, channels=1)
         label_img_decoded.set_shape([6, 6, 1])
         label_img_flatten = tf.to_float(tf.reshape(label_img_decoded, [-1]))
         return {'pixels': img_flatten}, label_img_flatten  # one_hot
 
-    dataset = (tf.data.Dataset.from_tensor_slices(imagenames)
+    dataset = (tf.data.Dataset.from_tensor_slices((imagenames, label_imagenames))
                .map(input_parser))  # Transform each elem by applying input_parser fn
     dataset = dataset.repeat(repeat_count) #Epoch number
     dataset = dataset.batch(10)  # Batch size to use
@@ -76,18 +76,14 @@ def toy_segmentation_model_fn(features, labels, mode, params):
 def main(unused_argv):
 
     file_path = "./data"
-    train_filenames = sorted([f for f in glob.glob(file_path + os.sep + "train_image*.jpg")])
-    train_label_filenames = sorted([f for f in glob.glob(file_path + os.sep + "train_label_image*.jpg")])
-    train_imagenames = tf.convert_to_tensor([train_filenames,train_label_filenames])
+    train_filenames = tf.convert_to_tensor(sorted([f for f in glob.glob(file_path + os.sep + "train_image*.png")]))
+    train_label_filenames = tf.convert_to_tensor(sorted([f for f in glob.glob(file_path + os.sep + "train_label_image*.png")]))
 
-    test_filenames = sorted([f for f in glob.glob(file_path + os.sep + "test_image*.jpg")])
-    test_label_filenames = sorted([f for f in glob.glob(file_path + os.sep + "test_label_image*.jpg")])
-    test_imagenames = tf.convert_to_tensor([test_filenames,test_label_filenames])
+    test_filenames = tf.convert_to_tensor(sorted([f for f in glob.glob(file_path + os.sep + "test_image*.png")]))
+    test_label_filenames = tf.convert_to_tensor(sorted([f for f in glob.glob(file_path + os.sep + "test_label_image*.png")]))
 
-    predict_filenames = sorted([f for f in glob.glob(file_path + os.sep + "predict_image*.jpg")])
-    predict_label_filenames = sorted([f for f in glob.glob(file_path + os.sep + "predict_label_image*.jpg")])
-    predict_imagenames = tf.convert_to_tensor([predict_filenames,predict_label_filenames])
-    print(len(predict_filenames))
+    predict_filenames = tf.convert_to_tensor(sorted([f for f in glob.glob(file_path + os.sep + "predict_image*.png")]))
+    predict_label_filenames = tf.convert_to_tensor(sorted([f for f in glob.glob(file_path + os.sep + "predict_label_image*.png")]))
 
     # Set model params
     model_params = {"learning_rate": LEARNING_RATE}
@@ -96,22 +92,23 @@ def main(unused_argv):
     nn = tf.estimator.Estimator(model_fn=toy_segmentation_model_fn, params=model_params, model_dir = "/tmp/tf_toy_segm")
 
     # Train
-    nn.train(input_fn=lambda: my_input_fn(train_imagenames, repeat_count=100))
+    nn.train(input_fn=lambda: my_input_fn(train_filenames, train_label_filenames, repeat_count=100))
 
     # Score accuracy
-    ev = nn.evaluate(input_fn=lambda: my_input_fn(test_imagenames))
+    ev = nn.evaluate(input_fn=lambda: my_input_fn(test_filenames, test_label_filenames))
     print("Loss: %s" % ev["loss"])
     print("Root Mean Squared Error: %s" % ev["rmse"])
 
     # Print out predictions
-    predictions = nn.predict(input_fn=lambda: my_input_fn(predict_imagenames))
-
+    predictions = nn.predict(input_fn=lambda: my_input_fn(predict_filenames, predict_label_filenames))
+    for i, p in enumerate(predictions):
+         print(p["pixels"].reshape(6,6))
+'''
     dir_name = "data"
     for i, p in enumerate(predictions):
-        print(p["pixels"])
-        image_name = "segmentated_image" + str(i) + ".jpg"
+        print(p["pixels"].reshape(6,6))
+        image_name = "segmentated_image" + str(i) + ".png"
         cv2.imwrite(os.path.join(dir_name, image_name), p["pixels"].reshape(6,6))
-
-
+'''
 if __name__ == "__main__":
     tf.app.run(main=main)
