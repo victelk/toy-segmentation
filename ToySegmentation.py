@@ -89,7 +89,8 @@ def main(unused_argv):
     model_params = {"learning_rate": LEARNING_RATE}
 
     # Instantiate Estimator
-    nn = tf.estimator.Estimator(model_fn=toy_segmentation_model_fn, params=model_params, model_dir = "/tmp/tf_toy_segm")
+    config = tf.estimator.RunConfig(model_dir="/tmp/tf_toy_segm7")
+    nn = tf.estimator.Estimator(model_fn=toy_segmentation_model_fn, params=model_params, config=config)
 
     # Train
     nn.train(input_fn=lambda: my_input_fn(train_filenames, train_label_filenames, repeat_count=100))
